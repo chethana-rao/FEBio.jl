@@ -13,7 +13,7 @@ const FEBIO_PATH = "/home/simulimb/FEBioStudio/bin/febio4" # Path to FEBio execu
 ###### 
 # Control parameters 
 pointSpacing = 3.0
-appliedPressure = -1e-5 
+appliedPressure = 1e-5 
 
 # Material parameters
 c1 = 1e-3 #Shear-modulus-like parameter
@@ -28,14 +28,14 @@ boxEl = ceil.(Int64,boxDim./pointSpacing) # Number of elements to use in each di
 E,V,F,Fb,CFb_type = hexbox(boxDim,boxEl)
 
 # Create face sets to define node sets later 
-Fb_top = Fb[CFb_type.==1]
+Fb_top = Fb[CFb_type.==2]
 Fb_bottom = Fb[CFb_type.==2]
 Fb_s1 = Fb[CFb_type.==6]
 Fb_s2 = Fb[CFb_type.==3]
 
 indNodesBack = elements2indices(Fb[CFb_type.==4])
 indNodesFront = elements2indices(Fb[CFb_type.==3])
-
+indNodesTop = elements2indices(Fb_top)
 ######
 # Define file names
 saveDir = joinpath(febiojl_dir(),"assets","temp") # Main directory to save FEBio input and output files
@@ -210,10 +210,10 @@ markersize = 20
 
 fig = Figure(size=(800,800))
 
-ax1=Axis3(fig[1, 1], aspect = :data, xlabel = "X", ylabel = "Y", zlabel = "Z", title = "bc's")
+ax1=Axis3(fig[1, 1], aspect = :data, xlabel = "X", ylabel = "Y", zlabel = "Z", title = "Boundary Conditions")
 hp1=poly!(ax1,GeometryBasics.Mesh(V,Fb), strokewidth=strokewidth,color=:white, strokecolor=:black, shading = FastShading, transparency=true)
 hp2 = scatter!(ax1,V[indNodesBack],color=:black,markersize=markersize)
-hp2 = scatter!(ax1,V[indNodesFront],color=:red,markersize=markersize)
+hp2 = scatter!(ax1,V[indNodesTop],color=:red,markersize=markersize)
 
 
 stepRange = 0:1:length(DD)-1
@@ -231,7 +231,7 @@ titleString = lift(hSlider.value) do stepIndex
   "Step: "*string(stepIndex)
 end
 
-ax2=Axis3(fig[1, 2], aspect = :data, xlabel = "X", ylabel = "Y", zlabel = "Z", title = titleString)
+ax2=Axis3(fig[1, 2], aspect = :data, xlabel = "X", ylabel = "Y", zlabel = "Z", title = "Deformed State: $titleString")
 
 hp=poly!(ax2,M, strokewidth=2,color=nodalColor, transparency=false, overdraw=false,colormap = Reverse(:Spectral), shading = FastShading)
 Colorbar(fig[1, 3],hp.plots[1],label = "Displacement magnitude [mm]") 
