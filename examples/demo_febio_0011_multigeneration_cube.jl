@@ -74,7 +74,7 @@ filename_xplt = joinpath(saveDir,"febioInputFile_01.xplt") # The XPLT file for v
 filename_log = joinpath(saveDir,"febioInputFile_01_LOG.txt") # The log file featuring the full FEBio terminal output stream
 filename_disp = "febioInputFile_01_DISP.txt" # A log file for results saved in same directory as .feb file  e.g. nodal displacements
 filename_energy_out = "febioInputFile_energy_out.txt"
-# filename_stress = "febioInputFile_01_STRESS.txt"
+filename_stress = "febioInputFile_01_STRESS.txt"
 ######
 # Define febio input file XML
 doc,febio_spec_node = feb_doc_initialize()
@@ -335,7 +335,7 @@ run_febio(filename_FEB,FEBIO_PATH)
 # Import results
 DD = read_logfile(joinpath(saveDir,filename_disp))
 DD_stress = read_logfile(joinpath(saveDir,filename_stress))
-
+# DD_E = read_logfile(joinpath(saveDir,filename_energy_out))
 #######
 ##############
 filename_disp_new = "febioInputFile_02_DISP.txt"
@@ -358,12 +358,40 @@ open(joinpath(saveDir,filename_disp)) do file
     end
 
 end
+
+filename_E_new = "febioInputFile_energy_out_2.txt"
+
+open(joinpath(saveDir,filename_energy_out)) do file 
+    new_file =[]
+    Step_count = 0
+    for line in eachline(file)
+        if occursin("*Step",line)
+            Step_count +=1
+            new_line = ("*Step = $Step_count")
+            line = new_line 
+        end
+        push!(new_file,line)
+    end 
+   
+    open(joinpath(saveDir,filename_E_new),"w") do file_2
+        for line in new_file 
+            println(file_2,line)
+        end
+    end
+
+end
+DD_E = read_logfile(joinpath(saveDir,filename_E_new))
+# Energy = []
+# for i in 1:length(DD_E)
+#     E = DD_E[i].data
+#     push!(Energy,E)
+# end
 DD_2 = read_logfile(joinpath(saveDir,filename_disp_new))
 time_step = []
 for i in 1:length(DD_2)
     time= DD_2[i].time
     push!(time_step,time)
-    println(time)
+    # println(time)
 end
 c1_plot = c1.*ones(length(time_step))
 cg_plot=c1_g[1].*ones(length(time_step))
@@ -377,8 +405,8 @@ fig = Figure(size=(1500,1500))
 
 ax1=Axis3(fig[1, 1], aspect = :data, xlabel = "X", ylabel = "Y", zlabel = "Z", title = "Boundary Conditions")
 hp1=poly!(ax1,GeometryBasics.Mesh(V,Fb), strokewidth=strokewidth,color=:white, strokecolor=:black, shading = FastShading, transparency=true)
-hp2 = scatter!(ax1,V[indNodes_bottom],color=:black,markersize=markersize)
-hp3 = scatter!(ax1,V[indNodes_top],color=:red,markersize=markersize)
+hp2 = scatter!(ax1,V[indNodes_bottom],color=:black,markersize=15)
+hp3 = scatter!(ax1,V[indNodes_top],color=:red,markersize=15)
 Legend(fig[1, 2],[hp2,hp3],["Fixed","Prescribed_disp"])
 display(fig)
 
@@ -415,14 +443,14 @@ end
 ax2=Axis3(fig1[1, 3], aspect = :data, xlabel = "X", ylabel = "Y", zlabel = "Z", title = titleString)
 ax3=Axis3(fig1[1, 1], aspect = :data, xlabel = "Time", ylabel = "C_1", title = "Ogden parameter",azimuth=-pi/2,elevation=pi/2)
 
-hp=poly!(ax2,M, strokewidth=2,color=nodalColor, transparency=false, overdraw=false,colormap = Reverse(:Spectral), shading = FastShading)
+hp=poly!(ax2,M, color = nodalColor, strokewidth=2, transparency=false, overdraw=false,colormap = Reverse(:Spectral), shading = FastShading)
 hp3 = lines!(ax3, time_step, c1_plot, color =:black, linewidth=3)
 hp4 = lines!(ax3, time_step, cg_plot, color =:red, linewidth=3)
 hp5 = scatter!(ax3, Time,C1, color =:black, markersize = 15)
 hp6 = scatter!(ax3, Time,Cg, color =:red, markersize = 15)
 Legend(fig1[1, 2],[hp5,hp6],["Materia1","Material2"])
 
-Colorbar(fig1[1, 4],hp.plots[1],label = "Displacement magnitude [mm]") 
+ Colorbar(fig1[1, 4],hp.plots[1],label = "Displacement magnitude [mm]") 
 
 slidercontrol(hSlider,ax2)
 
